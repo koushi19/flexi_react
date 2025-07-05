@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
-import Layout from './components/Layout/Layout'; // ✅ New Import
-import BlogPostList from './components/BlogPostList';
-import BlogPostDetail from './components/BlogPostDetail';
+import { Routes, Route, useNavigate, Link, useParams } from 'react-router-dom';
+
+import BlogPostList from './components/BlogPostList/BlogPostList';
 import CreatePostPage from './pages/CreatePostPage';
 import EditPostPage from './pages/EditPostPage';
-import AboutPage from './pages/AboutPage'; // ✅ New Import
-import DeleteButton from './components/DeleteButton';
-import ConfirmationDialog from './components/ConfirmationDialog';
-import { Link, useParams } from 'react-router-dom';
+import AboutPage from './pages/AboutPage';
+import Layout from './components/Layout/Layout';
+import ConfirmationDialog from './components/ConfirmationDialog/ConfirmationDialog';
+import PostPage from './pages/PostPage';
 
 const LOCAL_STORAGE_KEY = 'my-blog-posts';
 
@@ -30,7 +29,7 @@ const App = () => {
           title: 'Getting Started with React',
           summary: 'Learn the basics of React and build your first application.',
           content: '<p>This is a full guide on getting started with React.</p>',
-          author: 'Sai Prasad',
+          author: 'Jon Doe',
           date: '2023-01-01',
           url: '/posts/1',
         },
@@ -39,7 +38,7 @@ const App = () => {
           title: 'CSS Grid vs. Flexbox',
           summary: 'A comparison of two powerful layout systems in CSS.',
           content: '<p>CSS Grid and Flexbox each have their strengths. Here’s how to choose.</p>',
-          author: 'Sai Prasad',
+          author: 'Jon Doe',
           date: '2023-02-15',
           url: '/posts/2',
         },
@@ -48,7 +47,7 @@ const App = () => {
           title: 'Accessibility in Web Development',
           summary: 'Tips for making your web applications more accessible.',
           content: '<p>Accessibility is essential for inclusivity. Follow these practices.</p>',
-  author: 'Sai Prasad',
+          author: 'Jon Doe',
           date: '2023-03-10',
           url: '/posts/3',
         }
@@ -65,23 +64,15 @@ const App = () => {
     const postWithId = {
       ...newPost,
       id: newId,
-      summary: newPost.content.slice(0, 100) + '...',
       url: `/posts/${newId}`,
     };
-    setPosts([postWithId, ...posts]);
+    setPosts([...posts, postWithId]);
   };
 
   const updatePost = (id, updatedData) => {
-    const updatedPosts = posts.map((post) =>
-      post.id === id
-        ? {
-            ...post,
-            ...updatedData,
-            summary: updatedData.content.slice(0, 100) + '...',
-          }
-        : post
-    );
-    setPosts(updatedPosts);
+    setPosts(posts.map(post => 
+      post.id === id ? { ...post, ...updatedData } : post
+    ));
   };
 
   const handleDeleteRequest = (post) => {
@@ -90,10 +81,12 @@ const App = () => {
   };
 
   const confirmDelete = () => {
-    setPosts(posts.filter((p) => p.id !== postToDelete.id));
-    setDialogOpen(false);
-    setPostToDelete(null);
-    navigate('/');
+    if (postToDelete) {
+      setPosts(posts.filter(post => post.id !== postToDelete.id));
+      setPostToDelete(null);
+      setDialogOpen(false);
+      navigate('/');
+    }
   };
 
   return (
@@ -102,14 +95,14 @@ const App = () => {
         <Route path="/" element={<BlogPostList posts={posts} />} />
         <Route
           path="/posts/:id"
-          element={<PostWrapper posts={posts} onDelete={handleDeleteRequest} />}
+          element={<PostPageWrapper posts={posts} onDelete={handleDeleteRequest} />}
         />
         <Route path="/create" element={<CreatePostPage onSubmit={addPost} />} />
         <Route
           path="/edit/:id"
           element={<EditPostPage posts={posts} onUpdate={updatePost} />}
         />
-        <Route path="/about" element={<AboutPage />} /> {/* ✅ Route for About Page */}
+        <Route path="/about" element={<AboutPage />} />
       </Routes>
 
       <ConfirmationDialog
@@ -121,8 +114,7 @@ const App = () => {
   );
 };
 
-// This wrapper component remains the same
-const PostWrapper = ({ posts, onDelete }) => {
+const PostPageWrapper = ({ posts, onDelete }) => {
   const { id } = useParams();
   const post = posts.find((p) => p.id === id);
 
@@ -131,18 +123,7 @@ const PostWrapper = ({ posts, onDelete }) => {
   }
 
   return (
-    <div>
-      <BlogPostDetail
-        title={post.title}
-        content={post.content}
-        author={post.author}
-        date={post.date}
-      />
-      <DeleteButton onClick={() => onDelete(post)} />
-      <Link to={`/edit/${post.id}`}>
-          <button className="edit-button">Edit</button>
-      </Link>
-    </div>
+    <PostPage post={post} onDelete={() => onDelete(post)} />
   );
 };
 
